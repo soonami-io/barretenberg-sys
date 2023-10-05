@@ -1,7 +1,7 @@
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     // Tell cargo to look for shared libraries in the specified directory
-    println!("cargo:rustc-link-search=./bin");
+    println!("cargo:rustc-link-search=./lib");
     // Tell cargo to tell rustc to link static barretenberg
     println!("cargo:rustc-link-lib=static=barretenberg");
     println!("cargo:rustc-link-lib=stdc++");
