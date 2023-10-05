@@ -13,14 +13,10 @@ license = "Apache-2.0"
 links = "barretenberg"
 
 [dependencies]
-link-cplusplus = "1.0.8"
+
 
 [dev-dependencies]
 hex = "0.4.2"
 
 [build-dependencies]
-bindgen = "0.64.0"
-color-eyre = "0.6.2"
-pkg-config = "0.3.26"
-thiserror = "1.0.21"
-cc = "1.0.79"
+bindgen = "0.68.1"
