@@ -16,12 +16,7 @@ FFI bindings for the `barretenberg` library in Rust, providing convenience for z
 
 ### Clone the `barretenberg` library to your preferred folder:
 ```sh
-git clone https://github.com/AztecProtocol/barretenberg.git
-```
-
-### Checkout to the specified commit:
-```sh
-git checkout 87aeb375d7b434e0faf47abb79f97753ab760987
+git clone https://github.com/visoftsolutions/barretenberg.git
 ```
 
 ### Build the library:
