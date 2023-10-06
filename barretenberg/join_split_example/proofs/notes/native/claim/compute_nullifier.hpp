@@ -1,16 +1,14 @@
 #pragma once
+#include "../../constants.hpp"
 #include "barretenberg/common/serialize.hpp"
 #include "barretenberg/crypto/pedersen_commitment/pedersen.hpp"
 #include "barretenberg/ecc/curves/grumpkin/grumpkin.hpp"
-#include "../../constants.hpp"
 
 namespace join_split_example {
 namespace proofs {
 namespace notes {
 namespace native {
 namespace claim {
-
-using namespace barretenberg;
 
 inline auto compute_nullifier(grumpkin::fq const& note_commitment)
 {

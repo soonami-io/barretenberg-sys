@@ -1,9 +1,9 @@
 #include "compute_circuit_data.hpp"
+#include "../notes/native/index.hpp"
+#include "barretenberg/join_split_example/types.hpp"
+#include "barretenberg/stdlib/merkle_tree/hash_path.hpp"
 #include "join_split_circuit.hpp"
 #include "sign_join_split_tx.hpp"
-#include "../notes/native/index.hpp"
-#include "barretenberg/stdlib/merkle_tree/hash_path.hpp"
-#include "barretenberg/join_split_example/types.hpp"
 
 namespace join_split_example {
 namespace proofs {
@@ -59,13 +59,14 @@ join_split_tx noop_tx()
     return tx;
 }
 
-circuit_data get_circuit_data(std::shared_ptr<proof_system::ReferenceStringFactory> const& srs, bool mock)
+circuit_data get_circuit_data(std::shared_ptr<barretenberg::srs::factories::CrsFactory<curve::BN254>> const& srs,
+                              bool mock)
 {
     std::cerr << "Getting join-split circuit data..." << std::endl;
 
-    auto build_circuit = [&](Composer& composer) {
+    auto build_circuit = [&](Builder& builder) {
         join_split_tx tx(noop_tx());
-        join_split_circuit(composer, tx);
+        join_split_circuit(builder, tx);
     };
 
     return proofs::get_circuit_data<Composer>(

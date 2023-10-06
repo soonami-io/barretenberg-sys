@@ -1,10 +1,10 @@
 #pragma once
 #include "manifest.hpp"
 #include <array>
+#include <exception>
 #include <map>
 #include <string>
 #include <vector>
-#include <exception>
 
 #include "barretenberg/plonk/proof_system/verification_key/verification_key.hpp"
 
@@ -22,6 +22,7 @@ struct Blake3sHasher {
     static constexpr size_t PRNG_OUTPUT_SIZE = 32;
 
     static std::array<uint8_t, PRNG_OUTPUT_SIZE> hash(std::vector<uint8_t> const& input);
+    static std::array<uint8_t, PRNG_OUTPUT_SIZE> hash_plookup(std::vector<uint8_t> const& input);
 };
 
 enum HashType { Keccak256, PedersenBlake3s, PlookupPedersenBlake3s };

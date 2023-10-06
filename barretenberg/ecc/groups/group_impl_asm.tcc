@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef DISABLE_SHENANIGANS
+
+#include "barretenberg/ecc/groups/group.hpp"
 #include <cstdint>
 
 namespace barretenberg {
@@ -98,10 +101,10 @@ inline void group<coordinate_field, subgroup_field, GroupParams>::conditional_ne
                              : "r"(src),
                                "r"(dest),
                                "r"(predicate),
-                               [modulus_0] "i"(twice_modulus_0),
-                               [modulus_1] "i"(twice_modulus_1),
-                               [modulus_2] "i"(twice_modulus_2),
-                               [modulus_3] "i"(twice_modulus_3)
+                               [ modulus_0 ] "i"(twice_modulus_0),
+                               [ modulus_1 ] "i"(twice_modulus_1),
+                               [ modulus_2 ] "i"(twice_modulus_2),
+                               [ modulus_3 ] "i"(twice_modulus_3)
                              : "%r8", "%r9", "%r10", "%r11", "%r12", "%r13", "%r14", "%r15", "%ymm0", "memory", "cc");
 #else
         __asm__ __volatile__("xorq %%r8, %%r8                              \n\t"
@@ -138,14 +141,14 @@ inline void group<coordinate_field, subgroup_field, GroupParams>::conditional_ne
                              : "r"(src),
                                "r"(dest),
                                "r"(predicate),
-                               [modulus_0] "i"(twice_modulus_0),
-                               [modulus_1] "i"(twice_modulus_1),
-                               [modulus_2] "i"(twice_modulus_2),
-                               [modulus_3] "i"(twice_modulus_3)
+                               [ modulus_0 ] "i"(twice_modulus_0),
+                               [ modulus_1 ] "i"(twice_modulus_1),
+                               [ modulus_2 ] "i"(twice_modulus_2),
+                               [ modulus_3 ] "i"(twice_modulus_3)
                              : "%r8", "%r9", "%r10", "%r11", "%r12", "%r13", "%r14", "%r15", "memory", "cc");
 #endif
     } else {
-        if (predicate) {
+        if (predicate) { // NOLINT
             coordinate_field::__copy(src->x, dest->x);
             dest->y = -src->y;
         } else {
@@ -155,3 +158,5 @@ inline void group<coordinate_field, subgroup_field, GroupParams>::conditional_ne
 }
 
 } // namespace barretenberg
+
+#endif

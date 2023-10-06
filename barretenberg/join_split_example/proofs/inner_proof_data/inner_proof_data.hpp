@@ -1,14 +1,12 @@
 #pragma once
-#include "barretenberg/numeric/uint256/uint256.hpp"
-#include "barretenberg/numeric/uint128/uint128.hpp"
 #include "barretenberg/ecc/curves/bn254/fr.hpp"
 #include "barretenberg/ecc/curves/grumpkin/grumpkin.hpp"
+#include "barretenberg/numeric/uint128/uint128.hpp"
+#include "barretenberg/numeric/uint256/uint256.hpp"
 #include <array>
 
 namespace join_split_example {
 namespace proofs {
-
-using namespace barretenberg;
 
 namespace InnerProofFields {
 enum {

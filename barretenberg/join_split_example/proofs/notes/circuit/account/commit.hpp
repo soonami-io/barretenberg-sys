@@ -1,16 +1,14 @@
 #pragma once
-#include "barretenberg/stdlib/commitment/pedersen/pedersen.hpp"
-#include "barretenberg/stdlib/primitives/point/point.hpp"
 #include "../../constants.hpp"
 #include "barretenberg/join_split_example/types.hpp"
+#include "barretenberg/stdlib/commitment/pedersen/pedersen.hpp"
+#include "barretenberg/stdlib/primitives/point/point.hpp"
 
 namespace join_split_example {
 namespace proofs {
 namespace notes {
 namespace circuit {
 namespace account {
-
-using namespace proof_system::plonk::stdlib;
 
 inline auto commit(field_ct const& account_alias_hash,
                    point_ct const& account_public_key,

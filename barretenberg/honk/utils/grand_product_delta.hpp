@@ -11,16 +11,20 @@ namespace proof_system::honk {
  * @param beta random linear-combination term to combine both (wʲ, IDʲ) and (wʲ, σʲ)
  * @param gamma Schwartz-Zippel random evaluation to ensure ∏ᵢ (γ + Sᵢ) = ∏ᵢ (γ + Tᵢ)
  * @param domain_size Total number of rows required for the circuit (power of 2)
+ * @param offset Extent to which PI are offset from the 0th index in the wire polynomials, for example, due to inclusion
+ * of a leading zero row or Goblin style ECC op gates at the top of the execution trace.
  * @return Field Public input Δ
  */
-template <typename Field>
-Field compute_public_input_delta(std::span<const Field> public_inputs,
-                                 const Field& beta,
-                                 const Field& gamma,
-                                 const size_t domain_size)
+template <typename Flavor>
+typename Flavor::FF compute_public_input_delta(std::span<const typename Flavor::FF> public_inputs,
+                                               const typename Flavor::FF& beta,
+                                               const typename Flavor::FF& gamma,
+                                               const auto domain_size,
+                                               size_t offset = 0)
 {
-    Field numerator = Field::one();
-    Field denominator = Field::one();
+    using Field = typename Flavor::FF;
+    Field numerator = Field(1);
+    Field denominator = Field(1);
 
     // Let m be the number of public inputs x₀,…, xₘ₋₁.
     // Recall that we broke the permutation σ⁰ by changing the mapping
@@ -41,8 +45,11 @@ Field compute_public_input_delta(std::span<const Field> public_inputs,
     //      denominator_acc = γ - β⋅(1+i) = γ - β   - β⋅i
     // at the end of the loop, add and subtract β to each term respectively to
     // set the expected value for the start of iteration i+1.
-    Field numerator_acc = gamma + (beta * Field(domain_size));
-    Field denominator_acc = gamma - beta;
+    // Note: The public inputs may be offset from the 0th index of the wires, for example due to the inclusion of an
+    // initial zero row or Goblin-stlye ECC op gates. Accordingly, the indices i in the above formulas are given by i =
+    // [0, m-1] + offset, i.e. i = offset, 1 + offset, …, m - 1 + offset.
+    Field numerator_acc = gamma + (beta * Field(domain_size + offset));
+    Field denominator_acc = gamma - beta * Field(1 + offset);
 
     for (const auto& x_i : public_inputs) {
         numerator *= (numerator_acc + x_i);     // γ + xᵢ + β(n+i)
@@ -70,7 +77,7 @@ Field compute_public_input_delta(std::span<const Field> public_inputs,
  * @return Field
  */
 template <typename Field>
-Field compute_lookup_grand_product_delta(const Field& beta, const Field& gamma, const size_t domain_size)
+Field compute_lookup_grand_product_delta(const Field& beta, const Field& gamma, const auto domain_size)
 {
     Field gamma_by_one_plus_beta = gamma * (Field(1) + beta); // γ(1 + β)
     return gamma_by_one_plus_beta.pow(domain_size);           // (γ(1 + β))^n

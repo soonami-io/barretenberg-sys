@@ -1,13 +1,14 @@
+#include "barretenberg/common/serialize.hpp"
+#include "barretenberg/common/test.hpp"
 #include "barretenberg/ecc/curves/bn254/g1.hpp"
 #include "barretenberg/ecc/curves/grumpkin/grumpkin.hpp"
 #include "barretenberg/ecc/curves/secp256k1/secp256k1.hpp"
 #include "barretenberg/ecc/curves/secp256r1/secp256r1.hpp"
-#include "barretenberg/common/test.hpp"
+#include "barretenberg/serialize/test_helper.hpp"
 #include <fstream>
-#include "barretenberg/common/serialize.hpp"
 
-namespace test_affine_element {
-template <typename G1> class test_affine_element : public testing::Test {
+namespace TestAffineElement {
+template <typename G1> class TestAffineElement : public testing::Test {
     using element = typename G1::element;
     using affine_element = typename G1::affine_element;
 
@@ -61,9 +62,22 @@ template <typename G1> class test_affine_element : public testing::Test {
         }
     }
 
+    static void test_point_compression_unsafe()
+    {
+        for (size_t i = 0; i < 100; i++) {
+            affine_element P = affine_element(element::random_element());
+            uint256_t compressed = uint256_t(P.x);
+
+            // Note that we do not check the point Q_points[1] because its highly unlikely to hit a point P on the curve
+            // such that r < P.x < q.
+            std::array<affine_element, 2> Q_points = affine_element::from_compressed_unsafe(compressed);
+            EXPECT_EQ(P, Q_points[0]);
+        }
+    }
+
     // Regression test to ensure that the point at infinity is not equal to its coordinate-wise reduction, which may lie
     // on the curve, depending on the y-coordinate.
-    // TODO: add corresponding typed test class
+    // TODO(@Rumata888): add corresponding typed test class
     static void test_infinity_regression()
     {
         affine_element P;
@@ -73,16 +87,16 @@ template <typename G1> class test_affine_element : public testing::Test {
     }
 };
 
-typedef testing::Types<barretenberg::g1, grumpkin::g1, secp256k1::g1, secp256r1::g1> TestTypes;
+using TestTypes = testing::Types<barretenberg::g1, grumpkin::g1, secp256k1::g1, secp256r1::g1>;
 
-TYPED_TEST_SUITE(test_affine_element, TestTypes);
+TYPED_TEST_SUITE(TestAffineElement, TestTypes);
 
-TYPED_TEST(test_affine_element, read_write_buffer)
+TYPED_TEST(TestAffineElement, ReadWriteBuffer)
 {
     TestFixture::test_read_write_buffer();
 }
 
-TYPED_TEST(test_affine_element, point_compression)
+TYPED_TEST(TestAffineElement, PointCompression)
 {
     if constexpr (TypeParam::Fq::modulus.data[3] >= 0x4000000000000000ULL) {
         GTEST_SKIP();
@@ -91,13 +105,29 @@ TYPED_TEST(test_affine_element, point_compression)
     }
 }
 
+TYPED_TEST(TestAffineElement, PointCompressionUnsafe)
+{
+    if constexpr (TypeParam::Fq::modulus.data[3] >= 0x4000000000000000ULL) {
+        TestFixture::test_point_compression_unsafe();
+    } else {
+        GTEST_SKIP();
+    }
+}
+
 // Regression test to ensure that the point at infinity is not equal to its coordinate-wise reduction, which may lie
 // on the curve, depending on the y-coordinate.
-TEST(affine_element, infinity_ordering_regression)
+TEST(AffineElement, InfinityOrderingRegression)
 {
-    secp256k1::g1::affine_element P(0, 1), Q(0, 1);
+    secp256k1::g1::affine_element P(0, 1);
+    secp256k1::g1::affine_element Q(0, 1);
 
     P.self_set_infinity();
     EXPECT_NE(P < Q, Q < P);
 }
-} // namespace test_affine_element
+
+TEST(AffineElement, Msgpack)
+{
+    auto [actual, expected] = msgpack_roundtrip(secp256k1::g1::affine_element{ 1, 1 });
+    EXPECT_EQ(actual, expected);
+}
+} // namespace TestAffineElement

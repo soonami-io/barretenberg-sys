@@ -1,7 +1,7 @@
 #pragma once
+#include "barretenberg/crypto/schnorr/schnorr.hpp"
 #include "barretenberg/ecc/curves/bn254/fr.hpp"
 #include "barretenberg/ecc/curves/grumpkin/grumpkin.hpp"
-#include "barretenberg/crypto/schnorr/schnorr.hpp"
 
 namespace join_split_example {
 namespace fixtures {
@@ -18,7 +18,7 @@ struct user_context {
 inline barretenberg::fr generate_alias_hash(std::string const& alias)
 {
     std::vector<uint8_t> inputv(alias.begin(), alias.end());
-    std::vector<uint8_t> output = blake2::blake2s(inputv);
+    auto output = blake2::blake2s(inputv);
     return barretenberg::fr(uint256_t(from_buffer<barretenberg::fr>(output.data())) >> 32);
 }
 

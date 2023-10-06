@@ -1,7 +1,7 @@
-#include "barretenberg/numeric/uint256/uint256.hpp"
-#include "barretenberg/numeric/random/engine.hpp"
-#include "barretenberg/stdlib/primitives/safe_uint/safe_uint.hpp"
 #include "barretenberg/ecc/curves/grumpkin/grumpkin.hpp"
+#include "barretenberg/numeric/random/engine.hpp"
+#include "barretenberg/numeric/uint256/uint256.hpp"
+#include "barretenberg/stdlib/primitives/safe_uint/safe_uint.hpp"
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc99-designator"
 
@@ -9,6 +9,7 @@
 // the input should fail
 bool circuit_should_fail = false;
 
+using fr = barretenberg::fr;
 #define HAVOC_TESTING
 
 #include "barretenberg/common/fuzzer.hpp"
@@ -1417,7 +1418,7 @@ extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv)
  */
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* Data, size_t Size, size_t MaxSize, unsigned int Seed)
 {
-    using FuzzerClass = SafeUintFuzzBase<plonk::StandardComposer>;
+    using FuzzerClass = SafeUintFuzzBase<proof_system::StandardCircuitBuilder>;
     auto fast_random = FastRandom(Seed);
     auto size_occupied = ArithmeticFuzzHelper<FuzzerClass>::MutateInstructionBuffer(Data, Size, MaxSize, fast_random);
     if ((fast_random.next() % 200) < fuzzer_havoc_settings.GEN_LLVM_POST_MUTATION_PROB) {
@@ -1438,7 +1439,7 @@ extern "C" size_t LLVMFuzzerCustomCrossOver(const uint8_t* Data1,
                                             size_t MaxOutSize,
                                             unsigned int Seed)
 {
-    using FuzzerClass = SafeUintFuzzBase<plonk::StandardComposer>;
+    using FuzzerClass = SafeUintFuzzBase<proof_system::StandardCircuitBuilder>;
     auto fast_random = FastRandom(Seed);
     auto vecA = ArithmeticFuzzHelper<FuzzerClass>::parseDataIntoInstructions(Data1, Size1);
     auto vecB = ArithmeticFuzzHelper<FuzzerClass>::parseDataIntoInstructions(Data2, Size2);
@@ -1454,7 +1455,7 @@ extern "C" size_t LLVMFuzzerCustomCrossOver(const uint8_t* Data1,
  */
 extern "C" size_t LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size)
 {
-    RunWithComposers<SafeUintFuzzBase, FuzzerComposerTypes>(Data, Size, VarianceRNG);
+    RunWithComposers<SafeUintFuzzBase, FuzzerCircuitTypes>(Data, Size, VarianceRNG);
     return 0;
 }
 

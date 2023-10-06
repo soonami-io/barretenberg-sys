@@ -17,22 +17,21 @@ fn main() {
             "wrapper.hpp",
             r#"
             #include <barretenberg/dsl/acir_proofs/c_bind.hpp>
-            #include <barretenberg/crypto/blake2s/c_bind.hpp>
-            #include <barretenberg/crypto/schnorr/c_bind.hpp>
-            #include <barretenberg/ecc/curves/bn254/scalar_multiplication/c_bind.hpp>
             "#,
         )
-        .allowlist_function("blake2s_to_field")
-        .allowlist_function("acir_proofs_get_solidity_verifier")
-        .allowlist_function("acir_proofs_get_exact_circuit_size")
-        .allowlist_function("acir_proofs_get_total_circuit_size")
-        .allowlist_function("acir_proofs_init_proving_key")
-        .allowlist_function("acir_proofs_init_verification_key")
-        .allowlist_function("acir_proofs_new_proof")
-        .allowlist_function("acir_proofs_verify_proof")
-        .allowlist_function("compute_public_key")
-        .allowlist_function("construct_signature")
-        .allowlist_function("verify_signature")
+        .allowlist_function("acir_get_circuit_sizes")
+        .allowlist_function("acir_new_acir_composer")
+        .allowlist_function("acir_delete_acir_composer")
+        .allowlist_function("acir_create_circuit")
+        .allowlist_function("acir_init_proving_key")
+        .allowlist_function("acir_create_proof")
+        .allowlist_function("acir_load_verification_key")
+        .allowlist_function("acir_init_verification_key")
+        .allowlist_function("acir_get_verification_key")
+        .allowlist_function("acir_verify_proof")
+        .allowlist_function("acir_get_solidity_verifier")
+        .allowlist_function("acir_serialize_proof_into_fields")
+        .allowlist_function("acir_serialize_verification_key_into_fields")
         .generate()
         .expect("Couldn't generate bindings!");
 

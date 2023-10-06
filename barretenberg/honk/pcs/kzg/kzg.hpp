@@ -1,93 +1,102 @@
 #pragma once
 
 #include "../claim.hpp"
-#include "barretenberg/polynomials/polynomial.hpp"
+#include "barretenberg/honk/pcs/commitment_key.hpp"
+#include "barretenberg/honk/pcs/verification_key.hpp"
 #include "barretenberg/honk/transcript/transcript.hpp"
+#include "barretenberg/polynomials/polynomial.hpp"
 
 #include <memory>
 #include <utility>
 
 namespace proof_system::honk::pcs::kzg {
-/**
- * @brief A transformed polynomial commitment opening claim of the form (P₀, P₁) ∈ 𝔾₁
- * which should satisfy e(P₀, [1]₂) ⋅ e(P₁, [x]₂)=1.
- *
- * @tparam Params CommitmentScheme parameters, where the verification key VK has a
- * `pairing_check` function.
- */
-template <typename Params> class BilinearAccumulator {
-    using VK = typename Params::VK;
-    using Fr = typename Params::Fr;
-    using CommitmentAffine = typename Params::C;
-    using Commitment = typename Params::Commitment;
 
-  public:
-    /**
-     * @brief Construct a new Bilinear Accumulator object given a claim (C,r,v) and proof π.
-     *      - P₀ = C − v⋅[1]₁ + r⋅[x]₁
-     *      - P₁ = −π
-     * @param claim an OpeningClaim (C,r,v)
-     * @param proof a Commitment π
-     */
-    BilinearAccumulator(const OpeningClaim<Params>& claim, const Commitment& proof)
-        : lhs(claim.commitment - (Commitment::one() * claim.opening_pair.evaluation) +
-              (proof * claim.opening_pair.challenge))
-        , rhs(-proof)
-    {}
-
-    /**
-     * @brief verifies the accumulator with a pairing check
-     *
-     * @param vk VerificationKey
-     * @return e(P₀,[1]₁)e(P₁,[x]₂)≡ [1]ₜ
-     */
-    bool verify(std::shared_ptr<VK> vk) const { return vk->pairing_check(lhs, rhs); };
-
-    bool operator==(const BilinearAccumulator& other) const = default;
-
-    CommitmentAffine lhs, rhs;
-};
-
-template <typename Params> class UnivariateOpeningScheme {
-    using CK = typename Params::CK;
-
-    using Fr = typename Params::Fr;
-    using Commitment = typename Params::Commitment;
-    using CommitmentAffine = typename Params::C;
+template <typename Curve> class KZG {
+    using CK = CommitmentKey<Curve>;
+    using VK = VerifierCommitmentKey<Curve>;
+    using Fr = typename Curve::ScalarField;
+    using Commitment = typename Curve::AffineElement;
+    using GroupElement = typename Curve::Element;
     using Polynomial = barretenberg::Polynomial<Fr>;
 
-  public:
-    using Accumulator = BilinearAccumulator<Params>;
-
     /**
-     * @brief Compute KZG opening proof polynomial
+     * @brief Computes the KZG commitment to an opening proof polynomial at a single evaluation point
      *
-     * @param opening_pair OpeningPair = {r, v = polynomial(r)}
-     * @param polynomial the witness polynomial being opened
-     * @return KZG quotient polynomial of the form (p(X) - v) / (X - r)
+     * @param ck The commitment key which has a commit function, the srs and pippenger_runtime_state
+     * @param opening_pair OpeningPair = {r, v = p(r)}
+     * @param polynomial The witness whose opening proof needs to be computed
+     * @param prover_transcript Prover transcript
      */
-    static Polynomial compute_opening_proof_polynomial(const OpeningPair<Params>& opening_pair,
-                                                       const Polynomial& polynomial)
+  public:
+    static void compute_opening_proof(std::shared_ptr<CK> ck,
+                                      const OpeningPair<Curve>& opening_pair,
+                                      const Polynomial& polynomial,
+                                      ProverTranscript<Fr>& prover_trancript)
     {
         Polynomial quotient(polynomial);
         quotient[0] -= opening_pair.evaluation;
+        // Computes the coefficients for the quotient polynomial q(X) = (p(X) - v) / (X - r) through an FFT
         quotient.factor_roots(opening_pair.challenge);
-
-        return quotient;
+        auto quotient_commitment = ck->commit(quotient);
+        // TODO(#479): for now we compute the KZG commitment directly to unify the KZG and IPA interfaces but in the
+        // future we might need to adjust this to use the incoming alternative to work queue (i.e. variation of
+        // pthreads) or even the work queue itself
+        prover_trancript.send_to_verifier("KZG:W", quotient_commitment);
     };
 
     /**
-     * @brief Computes the accumulator for a single polynomial commitment opening claim
-     * This reduction is non-interactive and always succeeds.
+     * @brief Computes the KZG verification for an opening claim of a single polynomial commitment
+     *
+     * @param vk is the verification key which has a pairing check function
+     * @param claim OpeningClaim ({r, v}, C)
+     * @return  e(P₀,[1]₁)e(P₁,[x]₂)≡ [1]ₜ where
+     *      - P₀ = C − v⋅[1]₁ + r⋅[x]₁
+     *      - P₁ = [Q(x)]₁
+     */
+    static bool verify(std::shared_ptr<VK> vk,
+                       const OpeningClaim<Curve>& claim,
+                       VerifierTranscript<Fr>& verifier_transcript)
+    {
+        auto quotient_commitment = verifier_transcript.template receive_from_prover<Commitment>("KZG:W");
+        auto lhs = claim.commitment - (GroupElement::one() * claim.opening_pair.evaluation) +
+                   (quotient_commitment * claim.opening_pair.challenge);
+        auto rhs = -quotient_commitment;
+
+        return vk->pairing_check(lhs, rhs);
+    };
+
+    /**
+     * @brief Computes the input points for the pairing check needed to verify a KZG opening claim of a single
+     * polynomial commitment. This reduction is non-interactive and always succeeds.
+     * @details This is used in the recursive setting where we want to "aggregate" proofs, not verify them.
      *
      * @param claim OpeningClaim ({r, v}, C)
-     * @param proof π, a commitment to Q(X) = ( P(X) - v )/( X - r)
-     * @return Accumulator {C − v⋅[1]₁ + r⋅π, −π}
+     * @return  {P₀, P₁} where
+     *      - P₀ = C − v⋅[1]₁ + r⋅[x]₁
+     *      - P₁ = [Q(x)]₁
      */
-    static Accumulator reduce_verify(const OpeningClaim<Params>& claim, VerifierTranscript<Fr>& verifier_transcript)
+    static std::array<GroupElement, 2> compute_pairing_points(const OpeningClaim<Curve>& claim,
+                                                              auto& verifier_transcript)
     {
-        auto quotient_commitment = verifier_transcript.template receive_from_prover<CommitmentAffine>("KZG:W");
-        return Accumulator(claim, quotient_commitment);
+        auto quotient_commitment = verifier_transcript.template receive_from_prover<Commitment>("KZG:W");
+
+        auto lhs = claim.commitment + (quotient_commitment * claim.opening_pair.challenge);
+        // Add the evaluation point contribution v⋅[1]₁.
+        // Note: In the recursive setting, we only add the contribution if it is not the point at infinity (i.e. if the
+        // evaluation is not equal to zero).
+        // TODO(luke): What is the proper way to handle this? Contraints to show scalar (evaluation) is zero?
+        if constexpr (Curve::is_stdlib_type) {
+            if (!claim.opening_pair.evaluation.get_value().is_zero()) {
+                auto ctx = verifier_transcript.builder;
+                lhs -= GroupElement::one(ctx) * claim.opening_pair.evaluation;
+            }
+        } else {
+            lhs -= GroupElement::one() * claim.opening_pair.evaluation;
+        }
+
+        auto rhs = -quotient_commitment;
+
+        return { lhs, rhs };
     };
 };
 } // namespace proof_system::honk::pcs::kzg

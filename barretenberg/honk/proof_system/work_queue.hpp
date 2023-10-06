@@ -1,7 +1,7 @@
 #pragma once
 
 #include "barretenberg/honk/transcript/transcript.hpp"
-#include "barretenberg/plonk/proof_system/proving_key/proving_key.hpp"
+#include "barretenberg/srs/global_crs.hpp"
 #include <cstddef>
 #include <memory>
 
@@ -10,14 +10,11 @@ namespace proof_system::honk {
 // Currently only one type of work queue operation but there will likely be others related to Sumcheck
 enum WorkType { SCALAR_MULTIPLICATION };
 
-// TODO(luke): This Params template parameter is the same type expected by e.g. components of the PCS. Eventually it
-// should be replaced by some sort of Flavor concept that contains info about the Field etc. This should be resolved
-// at the same time as the similar patterns in Gemini etc.
-template <typename Params> class work_queue {
+template <typename Curve> class work_queue {
 
-    using CommitmentKey = typename Params::CK;
-    using FF = typename Params::Fr;
-    using Commitment = typename Params::C;
+    using CommitmentKey = pcs::CommitmentKey<Curve>;
+    using FF = typename Curve::ScalarField;
+    using Commitment = typename Curve::AffineElement;
 
     struct work_item_info {
         uint32_t num_scalar_multiplications;
@@ -30,24 +27,18 @@ template <typename Params> class work_queue {
     };
 
   private:
-    std::shared_ptr<proof_system::plonk::proving_key> proving_key;
     // TODO(luke): Consider handling all transcript interactions in the prover rather than embedding them in the queue.
     proof_system::honk::ProverTranscript<FF>& transcript;
-    CommitmentKey commitment_key;
+    std::shared_ptr<CommitmentKey> commitment_key;
     std::vector<work_item> work_item_queue;
 
   public:
-    explicit work_queue(std::shared_ptr<proof_system::plonk::proving_key>& proving_key,
-                        proof_system::honk::ProverTranscript<FF>& prover_transcript)
-        : proving_key(proving_key)
-        , transcript(prover_transcript)
-        , commitment_key(proving_key->circuit_size,
-                         "../srs_db/ignition"){}; // TODO(luke): make this properly parameterized
+    explicit work_queue(auto commitment_key, proof_system::honk::ProverTranscript<FF>& prover_transcript)
+        : transcript(prover_transcript)
+        , commitment_key(commitment_key){};
 
     work_queue(const work_queue& other) = default;
     work_queue(work_queue&& other) noexcept = default;
-    work_queue& operator=(const work_queue& other) = delete;
-    work_queue& operator=(work_queue&& other) = delete;
     ~work_queue() = default;
 
     [[nodiscard]] work_item_info get_queued_work_item_info() const
@@ -118,7 +109,7 @@ template <typename Params> class work_queue {
             case WorkType::SCALAR_MULTIPLICATION: {
 
                 // Run pippenger multi-scalar multiplication.
-                auto commitment = commitment_key.commit(item.mul_scalars);
+                auto commitment = commitment_key->commit(item.mul_scalars);
 
                 transcript.send_to_verifier(item.label, commitment);
 

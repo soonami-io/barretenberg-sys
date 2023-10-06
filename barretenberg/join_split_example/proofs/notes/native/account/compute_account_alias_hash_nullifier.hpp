@@ -1,7 +1,7 @@
 #pragma once
+#include "../../constants.hpp"
 #include "account_note.hpp"
 #include "barretenberg/crypto/pedersen_commitment/pedersen.hpp"
-#include "../../constants.hpp"
 
 namespace join_split_example {
 namespace proofs {
@@ -9,7 +9,7 @@ namespace notes {
 namespace native {
 namespace account {
 
-using namespace barretenberg;
+using fr = barretenberg::fr;
 
 inline fr compute_account_alias_hash_nullifier(fr const& alias_hash)
 {

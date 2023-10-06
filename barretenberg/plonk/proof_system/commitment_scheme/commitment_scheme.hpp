@@ -1,24 +1,22 @@
 #pragma once
+#include "../../../polynomials/polynomial.hpp"
 #include "../../../polynomials/polynomial_arithmetic.hpp"
 #include "../../../proof_system/work_queue/work_queue.hpp"
-#include "../../../polynomials/polynomial.hpp"
 #include "../types/commitment_open_proof.hpp"
 #include "../types/program_settings.hpp"
-
-using namespace barretenberg;
 
 namespace proof_system::plonk {
 
 class CommitmentScheme {
   public:
-    typedef barretenberg::fr fr;
+    using fr = barretenberg::fr;
 
     // Constructors for CommitmentScheme
     CommitmentScheme() {}
 
     virtual ~CommitmentScheme() {}
 
-    virtual void commit(fr* coefficients, std::string tag, fr item_constant, work_queue& queue) = 0;
+    virtual void commit(std::shared_ptr<fr[]> coefficients, std::string tag, fr item_constant, work_queue& queue) = 0;
 
     virtual void compute_opening_polynomial(const fr* src, fr* dest, const fr& z, const size_t n) = 0;
 

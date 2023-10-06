@@ -1,8 +1,8 @@
 #include "field.hpp"
-#include <functional>
 #include "../bool/bool.hpp"
-#include "../composers/composers.hpp"
+#include "../circuit_builders/circuit_builders.hpp"
 #include "barretenberg/ecc/curves/grumpkin/grumpkin.hpp"
+#include <functional>
 
 using namespace proof_system;
 
@@ -121,14 +121,13 @@ field_t<ComposerContext> field_t<ComposerContext>::operator+(const field_t& othe
         out += other.additive_constant;
         result.witness_index = ctx->add_variable(out);
 
-        const add_triple gate_coefficients{ witness_index,
-                                            other.witness_index,
-                                            result.witness_index,
-                                            multiplicative_constant,
-                                            other.multiplicative_constant,
-                                            barretenberg::fr::neg_one(),
-                                            (additive_constant + other.additive_constant) };
-        ctx->create_add_gate(gate_coefficients);
+        ctx->create_add_gate({ witness_index,
+                               other.witness_index,
+                               result.witness_index,
+                               multiplicative_constant,
+                               other.multiplicative_constant,
+                               barretenberg::fr::neg_one(),
+                               (additive_constant + other.additive_constant) });
     }
     return result;
 }
@@ -233,15 +232,14 @@ field_t<ComposerContext> field_t<ComposerContext>::operator*(const field_t& othe
         out += T0;
         out += q_c;
         result.witness_index = ctx->add_variable(out);
-        const poly_triple gate_coefficients{ .a = witness_index,
-                                             .b = other.witness_index,
-                                             .c = result.witness_index,
-                                             .q_m = q_m,
-                                             .q_l = q_l,
-                                             .q_r = q_r,
-                                             .q_o = barretenberg::fr::neg_one(),
-                                             .q_c = q_c };
-        ctx->create_poly_gate(gate_coefficients);
+        ctx->create_poly_gate({ .a = witness_index,
+                                .b = other.witness_index,
+                                .c = result.witness_index,
+                                .q_m = q_m,
+                                .q_l = q_l,
+                                .q_r = q_r,
+                                .q_o = barretenberg::fr::neg_one(),
+                                .q_c = q_c });
     }
     return result;
 }
@@ -289,15 +287,14 @@ field_t<ComposerContext> field_t<ComposerContext>::divide_no_zero_check(const fi
             barretenberg::fr q_c = -get_value();
             barretenberg::fr out_value = get_value() / other.get_value();
             result.witness_index = ctx->add_variable(out_value);
-            const poly_triple gate_coefficients{ .a = result.witness_index,
-                                                 .b = other.witness_index,
-                                                 .c = result.witness_index,
-                                                 .q_m = q_m,
-                                                 .q_l = q_l,
-                                                 .q_r = 0,
-                                                 .q_o = 0,
-                                                 .q_c = q_c };
-            ctx->create_poly_gate(gate_coefficients);
+            ctx->create_poly_gate({ .a = result.witness_index,
+                                    .b = other.witness_index,
+                                    .c = result.witness_index,
+                                    .q_m = q_m,
+                                    .q_l = q_l,
+                                    .q_r = 0,
+                                    .q_o = 0,
+                                    .q_c = q_c });
         }
     } else {
         // TODO SHOULD WE CARE ABOUT IF THE DIVISOR IS ZERO?
@@ -335,15 +332,14 @@ field_t<ComposerContext> field_t<ComposerContext>::divide_no_zero_check(const fi
         barretenberg::fr q_o = -multiplicative_constant;
         barretenberg::fr q_c = -additive_constant;
 
-        const poly_triple gate_coefficients{ .a = result.witness_index,
-                                             .b = other.witness_index,
-                                             .c = witness_index,
-                                             .q_m = q_m,
-                                             .q_l = q_l,
-                                             .q_r = q_r,
-                                             .q_o = q_o,
-                                             .q_c = q_c };
-        ctx->create_poly_gate(gate_coefficients);
+        ctx->create_poly_gate({ .a = result.witness_index,
+                                .b = other.witness_index,
+                                .c = witness_index,
+                                .q_m = q_m,
+                                .q_l = q_l,
+                                .q_r = q_r,
+                                .q_o = q_o,
+                                .q_c = q_c });
     }
     return result;
 }
@@ -439,8 +435,7 @@ field_t<ComposerContext> field_t<ComposerContext>::madd(const field_t& to_mul, c
 
     field_t<ComposerContext> result(ctx);
     result.witness_index = ctx->add_variable(out);
-
-    const mul_quad gate_coefficients{
+    ctx->create_big_mul_gate({
         .a = witness_index == IS_CONSTANT ? ctx->zero_idx : witness_index,
         .b = to_mul.witness_index == IS_CONSTANT ? ctx->zero_idx : to_mul.witness_index,
         .c = to_add.witness_index == IS_CONSTANT ? ctx->zero_idx : to_add.witness_index,
@@ -451,8 +446,7 @@ field_t<ComposerContext> field_t<ComposerContext>::madd(const field_t& to_mul, c
         .c_scaling = q_3,
         .d_scaling = -barretenberg::fr(1),
         .const_scaling = q_c,
-    };
-    ctx->create_big_mul_gate(gate_coefficients);
+    });
     return result;
 }
 
@@ -481,7 +475,7 @@ field_t<ComposerContext> field_t<ComposerContext>::add_two(const field_t& add_a,
     field_t<ComposerContext> result(ctx);
     result.witness_index = ctx->add_variable(out);
 
-    const mul_quad gate_coefficients{
+    ctx->create_big_mul_gate({
         .a = witness_index == IS_CONSTANT ? ctx->zero_idx : witness_index,
         .b = add_a.witness_index == IS_CONSTANT ? ctx->zero_idx : add_a.witness_index,
         .c = add_b.witness_index == IS_CONSTANT ? ctx->zero_idx : add_b.witness_index,
@@ -492,8 +486,7 @@ field_t<ComposerContext> field_t<ComposerContext>::add_two(const field_t& add_a,
         .c_scaling = q_3,
         .d_scaling = -barretenberg::fr(1),
         .const_scaling = q_c,
-    };
-    ctx->create_big_mul_gate(gate_coefficients);
+    });
     return result;
 }
 
@@ -523,15 +516,13 @@ template <typename ComposerContext> field_t<ComposerContext> field_t<ComposerCon
     // <=> this.v * this.v * [ 0 ] + this.v * [this.mul] + this.v * [ 0 ] + result.v * [ -1] + [this.add] == 0
     // <=> this.v * this.v * [q_m] + this.v * [   q_l  ] + this.v * [q_r] + result.v * [q_o] + [   q_c  ] == 0
 
-    const add_triple gate_coefficients{ .a = witness_index,
-                                        .b = witness_index,
-                                        .c = result.witness_index,
-                                        .a_scaling = multiplicative_constant,
-                                        .b_scaling = 0,
-                                        .c_scaling = barretenberg::fr::neg_one(),
-                                        .const_scaling = additive_constant };
-
-    context->create_add_gate(gate_coefficients);
+    context->create_add_gate({ .a = witness_index,
+                               .b = witness_index,
+                               .c = result.witness_index,
+                               .a_scaling = multiplicative_constant,
+                               .b_scaling = 0,
+                               .c_scaling = barretenberg::fr::neg_one(),
+                               .const_scaling = additive_constant });
     return result;
 }
 
@@ -552,7 +543,8 @@ template <typename ComposerContext> void field_t<ComposerContext>::assert_is_zer
     // this.v * 0 * [q_m] + this.v * [   q_l  ] + 0 * [q_r] + 0 * [q_o] + [   q_c  ] == 0
 
     ComposerContext* ctx = context;
-    const poly_triple gate_coefficients{
+
+    context->create_poly_gate({
         .a = witness_index,
         .b = ctx->zero_idx,
         .c = ctx->zero_idx,
@@ -561,8 +553,7 @@ template <typename ComposerContext> void field_t<ComposerContext>::assert_is_zer
         .q_r = barretenberg::fr(0),
         .q_o = barretenberg::fr(0),
         .q_c = additive_constant,
-    };
-    context->create_poly_gate(gate_coefficients);
+    });
 }
 
 template <typename ComposerContext> void field_t<ComposerContext>::assert_is_not_zero(std::string const& msg) const
@@ -593,7 +584,7 @@ template <typename ComposerContext> void field_t<ComposerContext>::assert_is_not
     // <=> this.v * inverse.v * [   q_m  ] + this.v * [q_l] + inverse.v * [   q_r  ] + 0 * [q_o] + [q_c] == 0
 
     // (a * mul_const + add_const) * b - 1 = 0
-    const poly_triple gate_coefficients{
+    context->create_poly_gate({
         .a = witness_index,             // input value
         .b = inverse.witness_index,     // inverse
         .c = ctx->zero_idx,             // no output
@@ -602,8 +593,7 @@ template <typename ComposerContext> void field_t<ComposerContext>::assert_is_not
         .q_r = additive_constant,       // b * mul_const
         .q_o = barretenberg::fr(0),     // c * 0
         .q_c = barretenberg::fr(-1),    // -1
-    };
-    context->create_poly_gate(gate_coefficients);
+    });
 }
 
 template <typename ComposerContext> bool_t<ComposerContext> field_t<ComposerContext>::is_zero() const
@@ -641,28 +631,28 @@ template <typename ComposerContext> bool_t<ComposerContext> field_t<ComposerCont
     barretenberg::fr q_r = barretenberg::fr::zero();
     barretenberg::fr q_o = barretenberg::fr::one();
     barretenberg::fr q_c = barretenberg::fr::neg_one();
-    const poly_triple gate_coefficients_a{ .a = k.witness_index,
-                                           .b = k_inverse.witness_index,
-                                           .c = is_zero.witness_index,
-                                           .q_m = q_m,
-                                           .q_l = q_l,
-                                           .q_r = q_r,
-                                           .q_o = q_o,
-                                           .q_c = q_c };
-    context->create_poly_gate(gate_coefficients_a);
+
+    context->create_poly_gate({ .a = k.witness_index,
+                                .b = k_inverse.witness_index,
+                                .c = is_zero.witness_index,
+                                .q_m = q_m,
+                                .q_l = q_l,
+                                .q_r = q_r,
+                                .q_o = q_o,
+                                .q_c = q_c });
 
     // is_zero * k_inverse - is_zero = 0
     q_o = barretenberg::fr::neg_one();
     q_c = barretenberg::fr::zero();
-    const poly_triple gate_coefficients_b{ .a = is_zero.witness_index,
-                                           .b = k_inverse.witness_index,
-                                           .c = is_zero.witness_index,
-                                           .q_m = q_m,
-                                           .q_l = q_l,
-                                           .q_r = q_r,
-                                           .q_o = q_o,
-                                           .q_c = q_c };
-    context->create_poly_gate(gate_coefficients_b);
+
+    context->create_poly_gate({ .a = is_zero.witness_index,
+                                .b = k_inverse.witness_index,
+                                .c = is_zero.witness_index,
+                                .q_m = q_m,
+                                .q_l = q_l,
+                                .q_r = q_r,
+                                .q_o = q_o,
+                                .q_c = q_c });
     return is_zero;
 }
 
@@ -739,9 +729,11 @@ void field_t<ComposerContext>::create_range_constraint(const size_t num_bits, st
         if (is_constant()) {
             ASSERT(uint256_t(get_value()).get_msb() < num_bits);
         } else {
-            if constexpr (ComposerContext::type == ComposerType::PLOOKUP) {
-                context->decompose_into_default_range(
-                    normalize().get_witness_index(), num_bits, plonk::UltraComposer::DEFAULT_PLOOKUP_RANGE_BITNUM, msg);
+            if constexpr (HasPlookup<ComposerContext>) {
+                context->decompose_into_default_range(normalize().get_witness_index(),
+                                                      num_bits,
+                                                      proof_system::UltraCircuitBuilder::DEFAULT_PLOOKUP_RANGE_BITNUM,
+                                                      msg);
             } else {
                 context->decompose_into_base4_accumulators(normalize().get_witness_index(), num_bits, msg);
             }
@@ -895,7 +887,7 @@ void field_t<ComposerContext>::evaluate_linear_identity(const field_t& a,
     barretenberg::fr q_4 = d.multiplicative_constant;
     barretenberg::fr q_c = a.additive_constant + b.additive_constant + c.additive_constant + d.additive_constant;
 
-    const add_quad gate_coefficients{
+    ctx->create_big_add_gate({
         a.witness_index == IS_CONSTANT ? ctx->zero_idx : a.witness_index,
         b.witness_index == IS_CONSTANT ? ctx->zero_idx : b.witness_index,
         c.witness_index == IS_CONSTANT ? ctx->zero_idx : c.witness_index,
@@ -905,8 +897,7 @@ void field_t<ComposerContext>::evaluate_linear_identity(const field_t& a,
         q_3,
         q_4,
         q_c,
-    };
-    ctx->create_big_add_gate(gate_coefficients);
+    });
 }
 
 template <typename ComposerContext>
@@ -932,7 +923,7 @@ void field_t<ComposerContext>::evaluate_polynomial_identity(const field_t& a,
     barretenberg::fr q_4 = d.multiplicative_constant;
     barretenberg::fr q_c = a.additive_constant * b.additive_constant + c.additive_constant + d.additive_constant;
 
-    const mul_quad gate_coefficients{
+    ctx->create_big_mul_gate({
         a.witness_index == IS_CONSTANT ? ctx->zero_idx : a.witness_index,
         b.witness_index == IS_CONSTANT ? ctx->zero_idx : b.witness_index,
         c.witness_index == IS_CONSTANT ? ctx->zero_idx : c.witness_index,
@@ -943,8 +934,7 @@ void field_t<ComposerContext>::evaluate_polynomial_identity(const field_t& a,
         q_3,
         q_4,
         q_c,
-    };
-    ctx->create_big_mul_gate(gate_coefficients);
+    });
 }
 
 /**
@@ -960,7 +950,7 @@ field_t<ComposerContext> field_t<ComposerContext>::accumulate(const std::vector<
         return input[0]; //.normalize();
     }
     /**
-     * If we are using UltraComposer, we can accumulate 3 values into a sum per gate.
+     * If we are using UltraPlonkComposer, we can accumulate 3 values into a sum per gate.
      * We track a decumulating sum of values in the 4th wire of every row.
      * i.e. the 4th wire of the first row is the total output value
      *
@@ -981,7 +971,7 @@ field_t<ComposerContext> field_t<ComposerContext>::accumulate(const std::vector<
      *
      * If num elements is not a multiple of 3, the final gate will be padded with zero_idx wires
      **/
-    if constexpr (ComposerContext::type == ComposerType::PLOOKUP) {
+    if constexpr (HasPlookup<ComposerContext>) {
         ComposerContext* ctx = nullptr;
         std::vector<field_t> accumulator;
         field_t constant_term = 0;
@@ -1039,7 +1029,7 @@ field_t<ComposerContext> field_t<ComposerContext>::accumulate(const std::vector<
             accumulating_total = witness_t<ComposerContext>(ctx, new_total);
         }
         return total.normalize();
-    } else if constexpr (ComposerContext::type == ComposerType::TURBO) {
+    } else if constexpr (std::same_as<ComposerContext, TurboCircuitBuilder>) {
 
         field_t total(0);
         bool odd_number = (input.size() & 0x01UL) == 0x01ULL;

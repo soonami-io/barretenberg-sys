@@ -1,12 +1,12 @@
 #include "../../constants.hpp"
 #include "../inner_proof_data/inner_proof_data.hpp"
-#include "index.hpp"
 #include "../notes/native/index.hpp"
 #include "barretenberg/common/streams.hpp"
 #include "barretenberg/common/test.hpp"
+#include "barretenberg/crypto/sha256/sha256.hpp"
 #include "barretenberg/plonk/proof_system/proving_key/serialize.hpp"
 #include "barretenberg/stdlib/merkle_tree/index.hpp"
-#include "barretenberg/crypto/sha256/sha256.hpp"
+#include "index.hpp"
 
 namespace join_split_example {
 namespace proofs {
@@ -25,9 +25,10 @@ class join_split_js_parity_tests : public ::testing::Test {
   protected:
     static void SetUpTestCase()
     {
-        auto null_crs_factory = std::make_shared<proof_system::ReferenceStringFactory>();
+        auto null_crs_factory = std::make_shared<barretenberg::srs::factories::CrsFactory<curve::BN254>>();
         init_proving_key(null_crs_factory, false);
-        auto crs_factory = std::make_unique<proof_system::FileReferenceStringFactory>("../srs_db/ignition");
+        auto crs_factory =
+            std::make_unique<barretenberg::srs::factories::FileCrsFactory<curve::BN254>>("../srs_db/ignition");
         init_verification_key(std::move(crs_factory));
         info("vk hash: ", get_verification_key()->sha256_hash());
     }

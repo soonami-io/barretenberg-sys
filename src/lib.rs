@@ -5,7 +5,3 @@
 
 // This matches bindgen::Builder output
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
-pub mod blake2s;
-pub mod composer;
-pub mod schnorr;

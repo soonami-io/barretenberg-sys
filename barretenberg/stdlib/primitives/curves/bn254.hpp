@@ -1,31 +1,44 @@
 #pragma once
-#include "barretenberg/ecc/curves/types.hpp"
 #include "../bigfield/bigfield.hpp"
 #include "../biggroup/biggroup.hpp"
 #include "../field/field.hpp"
+#include "barretenberg/ecc/curves/types.hpp"
 
 namespace proof_system::plonk {
 namespace stdlib {
 
-template <typename ComposerType> struct bn254 {
+template <typename CircuitBuilder> struct bn254 {
     static constexpr proof_system::CurveType type = proof_system::CurveType::BN254;
+    // TODO(#673): This flag is temporary. It is needed in the verifier classes (GeminiVerifier, etc.) while these
+    // classes are instantiated with "native" curve types. Eventually, the verifier classes will be instantiated only
+    // with stdlib types, and "native" verification will be acheived via a simulated builder.
+    static constexpr bool is_stdlib_type = true;
 
-    typedef barretenberg::fq fq;
-    typedef barretenberg::fr fr;
-    typedef barretenberg::g1 g1;
+    // Corresponding native types (used exclusively for testing)
+    using ScalarFieldNative = curve::BN254::ScalarField;
+    using BaseFieldNative = curve::BN254::BaseField;
+    using GroupNative = curve::BN254::Group;
 
-    typedef ComposerType Composer;
-    typedef witness_t<Composer> witness_ct;
-    typedef public_witness_t<Composer> public_witness_ct;
-    typedef field_t<Composer> fr_ct;
-    typedef byte_array<Composer> byte_array_ct;
-    typedef bool_t<Composer> bool_ct;
-    typedef stdlib::uint32<Composer> uint32_ct;
+    // Stdlib types corresponding to those defined in the native description of the curve.
+    // Note: its useful to have these type names match the native analog exactly so that components that digest a Curve
+    // (e.g. Gemini) can be agnostic as to whether they're operating on native or stdlib types.
+    using ScalarField = field_t<CircuitBuilder>;
+    using BaseField = bigfield<CircuitBuilder, barretenberg::Bn254FqParams>;
+    using Group = element<CircuitBuilder, BaseField, ScalarField, GroupNative>;
+    using Element = Group;
+    using AffineElement = Group;
 
-    typedef bigfield<Composer, barretenberg::Bn254FqParams> fq_ct;
-    typedef bigfield<Composer, barretenberg::Bn254FrParams> bigfr_ct;
-    typedef element<Composer, fq_ct, fr_ct, g1> g1_ct;
-    typedef element<Composer, fq_ct, bigfr_ct, g1> g1_bigfr_ct;
+    // Additional types with no analog in the native description of the curve
+    using Builder = CircuitBuilder;
+    using Composer = CircuitBuilder;
+    using witness_ct = witness_t<CircuitBuilder>;
+    using public_witness_ct = public_witness_t<CircuitBuilder>;
+    using byte_array_ct = byte_array<CircuitBuilder>;
+    using bool_ct = bool_t<CircuitBuilder>;
+    using uint32_ct = stdlib::uint32<CircuitBuilder>;
+
+    using bigfr_ct = bigfield<CircuitBuilder, barretenberg::Bn254FrParams>;
+    using g1_bigfr_ct = element<CircuitBuilder, BaseField, bigfr_ct, GroupNative>;
 
 }; // namespace bn254
 } // namespace stdlib

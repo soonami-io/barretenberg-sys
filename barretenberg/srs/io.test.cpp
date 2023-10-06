@@ -1,7 +1,7 @@
+#include "barretenberg/common/mem.hpp"
 #include "barretenberg/ecc/curves/bn254/fq12.hpp"
 #include "barretenberg/ecc/curves/bn254/pairing.hpp"
 #include "io.hpp"
-#include "barretenberg/common/mem.hpp"
 #include <gtest/gtest.h>
 
 using namespace barretenberg;
@@ -11,7 +11,7 @@ TEST(io, read_transcript_loads_well_formed_srs)
     size_t degree = 100000;
     g1::affine_element* monomials = (g1::affine_element*)(aligned_alloc(32, sizeof(g1::affine_element) * (degree + 2)));
     g2::affine_element g2_x;
-    io::read_transcript(monomials, g2_x, degree, "../srs_db/ignition");
+    srs::IO<curve::BN254>::read_transcript(monomials, g2_x, degree, "../srs_db/ignition");
 
     EXPECT_EQ(g1::affine_one, monomials[0]);
 

@@ -1,19 +1,19 @@
 #pragma once
 
 #include "barretenberg/common/serialize.hpp"
-#include "barretenberg/crypto/pedersen_commitment/pedersen.hpp"
 #include "barretenberg/crypto/blake3s/blake3s.hpp"
+#include "barretenberg/crypto/pedersen_commitment/pedersen.hpp"
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <span>
 #include <string>
 #include <utility>
 #include <vector>
-#include <map>
-#include <algorithm>
 
 namespace proof_system::honk {
 
@@ -65,7 +65,10 @@ class TranscriptManifest {
  */
 template <typename FF> class BaseTranscript {
     // TODO(Adrian): Make these tweakable
+  public:
     static constexpr size_t HASH_OUTPUT_SIZE = 32;
+
+  private:
     static constexpr size_t MIN_BYTES_PER_CHALLENGE = 128 / 8; // 128 bit challenges
 
     size_t round_number = 0;
@@ -119,8 +122,6 @@ template <typename FF> class BaseTranscript {
      */
     void consume_prover_element_bytes(const std::string& label, std::span<const uint8_t> element_bytes)
     {
-        (void)label;
-
         // Add an entry to the current round of the manifest
         manifest.add_entry(round_number, label, element_bytes.size());
 

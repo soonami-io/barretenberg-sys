@@ -1,5 +1,5 @@
 #include "uint.hpp"
-#include "../composers/composers.hpp"
+#include "../circuit_builders/circuit_builders.hpp"
 
 using namespace barretenberg;
 using namespace proof_system;
@@ -16,13 +16,13 @@ std::vector<uint32_t> uint<Composer, Native>::constrain_accumulators(Composer* c
                                                                      const size_t num_bits,
                                                                      std::string const& msg) const
 {
-    if constexpr (Composer::type == ComposerType::PLOOKUP) {
+    if constexpr (HasPlookup<Composer>) {
         // TODO: manage higher bit ranges
-        const auto sequence =
-            plookup_read::get_lookup_accumulators(plookup::MultiTableId::UINT32_XOR,
-                                                  field_t<Composer>::from_witness_index(context, witness_index),
-                                                  field_t<Composer>::from_witness_index(context, context->zero_idx),
-                                                  true);
+        const auto sequence = plookup_read<Composer>::get_lookup_accumulators(
+            plookup::MultiTableId::UINT32_XOR,
+            field_t<Composer>::from_witness_index(context, witness_index),
+            field_t<Composer>::from_witness_index(context, context->zero_idx),
+            true);
 
         std::vector<uint32_t> out(num_accumulators());
         for (size_t i = 0; i < num_accumulators(); ++i) {
@@ -215,15 +215,15 @@ template <typename Composer, typename Native> uint<Composer, Native> uint<Compos
         const uint256_t value = get_unbounded_value();
         const uint256_t overflow = value >> width;
         const uint256_t remainder = value & MASK;
-        const add_quad gate{ .a = witness_index,
-                             .b = context->zero_idx,
-                             .c = context->add_variable(remainder),
-                             .d = context->add_variable(overflow),
-                             .a_scaling = fr::one(),
-                             .b_scaling = fr::zero(),
-                             .c_scaling = fr::neg_one(),
-                             .d_scaling = -fr(CIRCUIT_UINT_MAX_PLUS_ONE),
-                             .const_scaling = (additive_constant & MASK) };
+        const add_quad_<typename Composer::FF> gate{ .a = witness_index,
+                                                     .b = context->zero_idx,
+                                                     .c = context->add_variable(remainder),
+                                                     .d = context->add_variable(overflow),
+                                                     .a_scaling = fr::one(),
+                                                     .b_scaling = fr::zero(),
+                                                     .c_scaling = fr::neg_one(),
+                                                     .d_scaling = -fr(CIRCUIT_UINT_MAX_PLUS_ONE),
+                                                     .const_scaling = (additive_constant & MASK) };
 
         context->create_balanced_add_gate(gate);
 
@@ -317,13 +317,13 @@ template <typename Composer, typename Native> bool_t<Composer> uint<Composer, Na
     uint256_t quad =
         uint256_t(context->get_variable(right_idx)) - uint256_t(context->get_variable(left_idx)) * uint256_t(4);
 
-    if constexpr (Composer::type == ComposerType::PLOOKUP) {
+    if constexpr (HasPlookup<Composer>) {
         uint256_t lo_bit = quad & 1;
         uint256_t hi_bit = (quad & 2) >> 1;
         // difference in quads = 0, 1, 2, 3 = delta
         // (delta - lo_bit) / 2 \in [0, 1]
         // lo_bit \in [0, 1]
-        add_quad gate{
+        add_quad_<typename Composer::FF> gate{
             context->add_variable(lo_bit), context->add_variable(hi_bit), right_idx, left_idx, 1, 2, -1, 4, 0,
         };
         context->create_new_range_constraint(gate.a, 1);
@@ -352,15 +352,15 @@ template <typename Composer, typename Native> bool_t<Composer> uint<Composer, Na
     if ((bit_index & 1UL) == 0UL) {
         // we want a low bit
         uint256_t lo_bit = quad & 1;
-        add_quad gate{ .a = context->add_variable(lo_bit),
-                       .b = context->zero_idx,
-                       .c = right_idx,
-                       .d = left_idx,
-                       .a_scaling = fr(3),
-                       .b_scaling = fr::zero(),
-                       .c_scaling = -fr(3),
-                       .d_scaling = fr(12),
-                       .const_scaling = fr::zero() };
+        add_quad_<typename Composer::FF> gate{ .a = context->add_variable(lo_bit),
+                                               .b = context->zero_idx,
+                                               .c = right_idx,
+                                               .d = left_idx,
+                                               .a_scaling = fr(3),
+                                               .b_scaling = fr::zero(),
+                                               .c_scaling = -fr(3),
+                                               .d_scaling = fr(12),
+                                               .const_scaling = fr::zero() };
         /** constraint:
          *    3 lo_bit + 0 * 0 - 3 a_pivot + 12 a_{pivot - 1} + 0 + 6 high bit of (A_pivot - 4 A_{pivot - 1}) == 0
          *  i.e.,
@@ -376,15 +376,15 @@ template <typename Composer, typename Native> bool_t<Composer> uint<Composer, Na
     // if 'index' is odd, we want a high bit
     uint256_t hi_bit = quad >> 1;
 
-    add_quad gate{ .a = context->zero_idx,
-                   .b = context->add_variable(hi_bit),
-                   .c = right_idx,
-                   .d = left_idx,
-                   .a_scaling = fr::zero(),
-                   .b_scaling = -fr(6),
-                   .c_scaling = fr::zero(),
-                   .d_scaling = fr::zero(),
-                   .const_scaling = fr::zero() };
+    add_quad_<typename Composer::FF> gate{ .a = context->zero_idx,
+                                           .b = context->add_variable(hi_bit),
+                                           .c = right_idx,
+                                           .d = left_idx,
+                                           .a_scaling = fr::zero(),
+                                           .b_scaling = -fr(6),
+                                           .c_scaling = fr::zero(),
+                                           .d_scaling = fr::zero(),
+                                           .const_scaling = fr::zero() };
 
     /**
      * constraint:

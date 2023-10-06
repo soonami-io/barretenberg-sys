@@ -1,15 +1,13 @@
 #pragma once
-#include "barretenberg/crypto/pedersen_hash/pedersen.hpp"
-#include "../../primitives/composers/composers_fwd.hpp"
+#include "../../primitives/circuit_builders/circuit_builders_fwd.hpp"
 #include "../../primitives/field/field.hpp"
 #include "../../primitives/point/point.hpp"
+#include "barretenberg/crypto/pedersen_hash/pedersen.hpp"
 
 namespace proof_system::plonk {
 namespace stdlib {
 
 using namespace barretenberg;
-using namespace crypto::pedersen_hash;
-
 template <typename ComposerContext> class pedersen_hash {
 
   private:

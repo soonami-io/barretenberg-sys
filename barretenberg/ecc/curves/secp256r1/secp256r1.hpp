@@ -1,35 +1,10 @@
 #pragma once
 
-#include "barretenberg/numeric/uint256/uint256.hpp"
-#include "barretenberg/numeric/uintx/uintx.hpp"
-
 #include "../../fields/field.hpp"
 #include "../../groups/group.hpp"
-#include "../bn254/fq.hpp"
-#include "../bn254/fr.hpp"
 
 namespace secp256r1 {
-
-constexpr uint256_t get_r_squared(const uint256_t prime_256)
-{
-    uint512_t R(0, 1);
-    uint1024_t R_1024 = uint1024_t(R);
-    uint1024_t R_squared = R_1024 * R_1024;
-    uint1024_t modulus = uint1024_t(uint512_t(prime_256));
-
-    uint1024_t R_squared_mod_p = R_squared % modulus;
-    return R_squared_mod_p.lo.lo;
-}
-
-constexpr uint64_t get_r_inv(const uint256_t prime_256)
-{
-    uint512_t r{ 0, 1 };
-    // -(1/q) mod r
-    uint512_t q{ -prime_256, 0 };
-    uint256_t q_inv = q.invmod(r).lo;
-    return (q_inv).data[0];
-}
-
+// NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays)
 struct Secp256r1FqParams {
     static constexpr uint64_t modulus_0 = 0xFFFFFFFFFFFFFFFFULL;
     static constexpr uint64_t modulus_1 = 0x00000000FFFFFFFFULL;
@@ -109,8 +84,8 @@ struct Secp256r1FrParams {
     static constexpr uint64_t primitive_root_3 = 0UL;
 };
 
-typedef barretenberg::field<Secp256r1FqParams> fq;
-typedef barretenberg::field<Secp256r1FrParams> fr;
+using fq = barretenberg::field<Secp256r1FqParams>;
+using fr = barretenberg::field<Secp256r1FrParams>;
 
 struct Secp256r1G1Params {
     static constexpr bool USE_ENDOMORPHISM = false;
@@ -129,8 +104,20 @@ struct Secp256r1G1Params {
         fq(0xCBB6406837BF51F5, 0x2BCE33576B315ECE, 0x8EE7EB4A7C0F9E16, 0x4FE342E2FE1A7F9B).to_montgomery_form();
 };
 
-typedef barretenberg::
-    group<barretenberg::field<Secp256r1FqParams>, barretenberg::field<Secp256r1FrParams>, Secp256r1G1Params>
-        g1;
-g1::affine_element get_generator(const size_t generator_index);
+using g1 = barretenberg::
+    group<barretenberg::field<Secp256r1FqParams>, barretenberg::field<Secp256r1FrParams>, Secp256r1G1Params>;
+g1::affine_element get_generator(size_t generator_index);
 } // namespace secp256r1
+
+namespace curve {
+class SECP256R1 {
+  public:
+    using ScalarField = secp256r1::fr;
+    using BaseField = secp256r1::fq;
+    using Group = secp256r1::g1;
+    using Element = typename Group::element;
+    using AffineElement = typename Group::affine_element;
+};
+} // namespace curve
+
+// NOLINTEND(cppcoreguidelines-avoid-c-arrays)

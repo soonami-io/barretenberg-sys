@@ -1,40 +1,19 @@
 #pragma once
 #include "barretenberg/env/logstr.hpp"
-#include <sstream>
+#include "barretenberg/stdlib/primitives/circuit_builders/circuit_builders_fwd.hpp"
 #include <algorithm>
-#include <vector>
+#include <sstream>
 #include <string>
+#include <vector>
 
 #define BENCHMARK_INFO_PREFIX "##BENCHMARK_INFO_PREFIX##"
 #define BENCHMARK_INFO_SEPARATOR "#"
 #define BENCHMARK_INFO_SUFFIX "##BENCHMARK_INFO_SUFFIX##"
 
-#define GET_COMPOSER_NAME_STRING(composer)                                                                             \
-    (typeid(composer) == typeid(plonk::StandardComposer)      ? "StandardPlonk"                                        \
-     : typeid(composer) == typeid(plonk::TurboComposer)       ? "TurboPlonk"                                           \
-     : typeid(composer) == typeid(plonk::UltraComposer)       ? "UltraPlonk"                                           \
-     : typeid(composer) == typeid(honk::StandardHonkComposer) ? "StandardHonk"                                         \
-                                                              : "NULLPlonk")
-
-namespace {
-
-inline void format_chain(std::ostream&) {}
-
-template <typename T> void format_chain(std::ostream& os, T const& first)
-{
-    os << first;
-}
-
-template <typename T, typename... Args> void format_chain(std::ostream& os, T const& first, Args const&... args)
-{
-    os << first;
-    format_chain(os, args...);
-}
-
 template <typename... Args> std::string format(Args... args)
 {
     std::ostringstream os;
-    format_chain(os, args...);
+    ((os << args), ...);
     return os.str();
 }
 
@@ -67,7 +46,6 @@ template <typename... Args> std::string benchmark_format(Args... args)
     benchmark_format_chain(os, args...);
     return os.str();
 }
-} // namespace
 
 #if NDEBUG
 template <typename... Args> inline void debug(Args... args)
@@ -75,12 +53,17 @@ template <typename... Args> inline void debug(Args... args)
     logstr(format(args...).c_str());
 }
 #else
-template <typename... Args> inline void debug(Args...) {}
+template <typename... Args> inline void debug(Args... /*unused*/) {}
 #endif
 
 template <typename... Args> inline void info(Args... args)
 {
     logstr(format(args...).c_str());
+}
+
+template <typename... Args> inline void important(Args... args)
+{
+    logstr(format("important: ", args...).c_str());
 }
 
 /**
@@ -98,7 +81,7 @@ inline void benchmark_info(Arg1 composer, Arg2 class_name, Arg3 operation, Arg4 
     logstr(benchmark_format(composer, class_name, operation, metric, value).c_str());
 }
 #else
-template <typename... Args> inline void benchmark_info(Args...) {}
+template <typename... Args> inline void benchmark_info(Args... /*unused*/) {}
 #endif
 
 /**
@@ -110,6 +93,12 @@ class BenchmarkInfoCollator {
     std::vector<std::string> saved_benchmarks;
 
   public:
+    BenchmarkInfoCollator() = default;
+    BenchmarkInfoCollator(const BenchmarkInfoCollator& other) = default;
+    BenchmarkInfoCollator(BenchmarkInfoCollator&& other) = default;
+    BenchmarkInfoCollator& operator=(const BenchmarkInfoCollator& other) = default;
+    BenchmarkInfoCollator& operator=(BenchmarkInfoCollator&& other) = default;
+
 /**
  * @brief Info used to store circuit statistics during CI/CD with concrete structure. Stores string in vector for now
  * (used to flush all benchmarks at the end of test).
@@ -126,7 +115,10 @@ class BenchmarkInfoCollator {
         saved_benchmarks.push_back(benchmark_format(composer, class_name, operation, metric, value).c_str());
     }
 #else
-    template <typename... Args> inline void benchmark_info_deferred(Args...) {}
+    explicit BenchmarkInfoCollator(std::vector<std::string> saved_benchmarks)
+        : saved_benchmarks(std::move(saved_benchmarks))
+    {}
+    template <typename... Args> inline void benchmark_info_deferred(Args... /*unused*/) {}
 #endif
     ~BenchmarkInfoCollator()
     {

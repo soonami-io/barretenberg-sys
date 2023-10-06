@@ -1,14 +1,20 @@
 #pragma once
-#include "barretenberg/numeric/uint256/uint256.hpp"
-#include <vector>
-#include <type_traits>
 #include "barretenberg/ecc/curves/bn254/fq2.hpp"
+#include "barretenberg/numeric/uint256/uint256.hpp"
+#include "barretenberg/serialize/msgpack.hpp"
+#include <type_traits>
+#include <vector>
 
-namespace barretenberg {
-namespace group_elements {
+namespace barretenberg::group_elements {
 template <typename Fq, typename Fr, typename Params> class alignas(64) affine_element {
   public:
-    affine_element() noexcept {}
+    using in_buf = const uint8_t*;
+    using vec_in_buf = const uint8_t*;
+    using out_buf = uint8_t*;
+    using vec_out_buf = uint8_t**;
+
+    affine_element() noexcept = default;
+    ~affine_element() noexcept = default;
 
     constexpr affine_element(const Fq& a, const Fq& b) noexcept;
 
@@ -31,6 +37,19 @@ template <typename Fq, typename Fr, typename Params> class alignas(64) affine_el
               typename CompileTimeEnabled = std::enable_if_t<(BaseField::modulus >> 255) == uint256_t(0), void>>
     static constexpr affine_element from_compressed(const uint256_t& compressed) noexcept;
 
+    /**
+     * @brief Reconstruct a point in affine coordinates from compressed form.
+     * @details #LARGE_MODULUS_AFFINE_POINT_COMPRESSION Point compression is implemented for curves of a prime
+     * field F_p with p being 256 bits.
+     * TODO(Suyash): Check with kesha if this is correct.
+     *
+     * @param compressed compressed point
+     * @return constexpr affine_element
+     */
+    template <typename BaseField = Fq,
+              typename CompileTimeEnabled = std::enable_if_t<(BaseField::modulus >> 255) == uint256_t(1), void>>
+    static constexpr std::array<affine_element, 2> from_compressed_unsafe(const uint256_t& compressed) noexcept;
+
     constexpr affine_element& operator=(const affine_element& other) noexcept;
 
     constexpr affine_element& operator=(affine_element&& other) noexcept;
@@ -39,22 +58,35 @@ template <typename Fq, typename Fr, typename Params> class alignas(64) affine_el
 
     template <typename BaseField = Fq,
               typename CompileTimeEnabled = std::enable_if_t<(BaseField::modulus >> 255) == uint256_t(0), void>>
-    constexpr uint256_t compress() const noexcept;
+    [[nodiscard]] constexpr uint256_t compress() const noexcept;
 
     static affine_element infinity();
     constexpr affine_element set_infinity() const noexcept;
     constexpr void self_set_infinity() noexcept;
 
-    constexpr bool is_point_at_infinity() const noexcept;
+    [[nodiscard]] constexpr bool is_point_at_infinity() const noexcept;
 
-    constexpr bool on_curve() const noexcept;
+    [[nodiscard]] constexpr bool on_curve() const noexcept;
+
+    /**
+     * @brief Samples a random point on the curve.
+     *
+     * @return A randomly chosen point on the curve
+     */
+    static affine_element random_element(numeric::random::Engine* engine = nullptr) noexcept;
+
+    static std::optional<affine_element> derive_from_x_coordinate(const Fq& x, bool sign_bit) noexcept;
 
     /**
      * @brief Hash a seed value to curve.
      *
      * @return A point on the curve corresponding to the given seed
      */
-    static affine_element hash_to_curve(const uint64_t seed) noexcept;
+    template <typename = typename std::enable_if<Params::can_hash_to_curve>>
+    static affine_element hash_to_curve(uint64_t seed) noexcept;
+
+    template <typename = typename std::enable_if<Params::can_hash_to_curve>>
+    static affine_element hash_to_curve(const std::vector<uint8_t>& seed) noexcept;
 
     constexpr bool operator==(const affine_element& other) const noexcept;
 
@@ -105,7 +137,7 @@ template <typename Fq, typename Fr, typename Params> class alignas(64) affine_el
         affine_element result;
 
         // need to read a raw uint256_t to avoid reductions so we can check whether the point is the point at infinity
-        uint256_t raw_x = from_buffer<uint256_t>(buffer + sizeof(Fq));
+        auto raw_x = from_buffer<uint256_t>(buffer + sizeof(Fq));
 
         if constexpr (Fq::modulus.get_msb() == 255) {
             if (raw_x == Fq::modulus) {
@@ -142,7 +174,7 @@ template <typename Fq, typename Fr, typename Params> class alignas(64) affine_el
      *
      * @return Vector with serialized representation of the point
      */
-    inline std::vector<uint8_t> to_buffer() const
+    [[nodiscard]] inline std::vector<uint8_t> to_buffer() const
     {
         std::vector<uint8_t> buffer(sizeof(affine_element));
         affine_element::serialize_to_buffer(*this, &buffer[0]);
@@ -156,22 +188,9 @@ template <typename Fq, typename Fr, typename Params> class alignas(64) affine_el
     }
     Fq x;
     Fq y;
+    // for serialization: update with new fields
+    MSGPACK_FIELDS(x, y);
 };
-
-template <typename B, typename Fq, typename Fr, typename Params> void read(B& it, affine_element<Fq, Fr, Params>& value)
-{
-    read(it, value.x);
-    read(it, value.y);
-}
-
-template <typename B, typename Fq, typename Fr, typename Params>
-void write(B& buf, affine_element<Fq, Fr, Params> const& value)
-{
-    write(buf, value.x);
-    write(buf, value.y);
-}
-
-} // namespace group_elements
-} // namespace barretenberg
+} // namespace barretenberg::group_elements
 
 #include "./affine_element_impl.hpp"
