@@ -8,7 +8,7 @@
 // This matches bindgen::Builder output
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-use acir_proofs::acir_composer::{AcirComposer, get_circuit_sizes};
+use acir_proofs::acir_composer::AcirComposer;
 pub mod acir_proofs;
 pub mod buffer;
 
