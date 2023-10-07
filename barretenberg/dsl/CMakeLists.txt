@@ -1,12 +1,2 @@
-barretenberg_module(
-    dsl
-    plonk
-    stdlib_primitives
-    stdlib_sha256
-    stdlib_blake2s
-    stdlib_keccak
-    stdlib_pedersen_commitment
-    stdlib_merkle_tree
-    stdlib_schnorr
-    crypto_sha256
-)
+add_subdirectory(acir_format)
+add_subdirectory(acir_proofs)

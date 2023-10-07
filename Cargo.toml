@@ -13,10 +13,10 @@ license = "Apache-2.0"
 links = "barretenberg"
 
 [dependencies]
-
+link-cplusplus = "1.0.9"
 
 [dev-dependencies]
-hex = "0.4.2"
 
 [build-dependencies]
 bindgen = "0.68.1"
+cc = "1.0.83"

@@ -16,7 +16,7 @@ fn main() {
         .header_contents(
             "wrapper.hpp",
             r#"
-            #include <barretenberg/dsl/acir_proofs/c_bind.hpp>
+            #include <barretenberg/dsl/acir_proofs/acir_proofs.hpp>
             "#,
         )
         .allowlist_function("acir_get_circuit_sizes")
