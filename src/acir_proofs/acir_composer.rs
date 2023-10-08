@@ -21,9 +21,10 @@ impl AcirComposer {
         let mut out_ptr = ptr::null_mut();
         let error_msg_ptr = unsafe { acir_new_acir_composer(&size_hint, &mut out_ptr) };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
         if out_ptr.is_null() {
             Err("Failed to create a new ACIR composer.")
@@ -34,12 +35,17 @@ impl AcirComposer {
 
     /// Initializes the proving key for this composer.
     pub fn init_proving_key(&self, constraint_system_buf: &[u8]) {
-        let error_msg_ptr =
-            unsafe { acir_init_proving_key(&self.ptr, constraint_system_buf.as_ptr()) };
+        let error_msg_ptr = unsafe {
+            acir_init_proving_key(
+                &self.ptr,
+                serialize_slice(constraint_system_buf).as_slice().as_ptr(),
+            )
+        };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
     }
 
@@ -54,16 +60,17 @@ impl AcirComposer {
         let error_msg_ptr = unsafe {
             acir_create_proof(
                 &self.ptr,
-                constraint_system_buf.as_ptr(),
+                serialize_slice(constraint_system_buf).as_slice().as_ptr(),
                 witness.as_ptr(),
                 &is_recursive,
                 &mut out_ptr,
             )
         };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
         if out_ptr.is_null() {
             Err("Failed to create proof.")
@@ -77,18 +84,20 @@ impl AcirComposer {
         let error_msg_ptr =
             unsafe { acir_load_verification_key(&self.ptr, verification_key.as_ptr()) };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
     }
 
     pub fn init_verification_key(&self) {
         let error_msg_ptr = unsafe { acir_init_verification_key(&self.ptr) };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
     }
 
@@ -96,9 +105,10 @@ impl AcirComposer {
         let mut out_ptr: *mut u8 = ptr::null_mut();
         let error_msg_ptr = unsafe { acir_get_verification_key(&self.ptr, &mut out_ptr) };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
         if out_ptr.is_null() {
             Err("Failed to get verification key.")
@@ -113,9 +123,10 @@ impl AcirComposer {
         let error_msg_ptr =
             unsafe { acir_verify_proof(&self.ptr, proof.as_ptr(), &is_recursive, &mut result) };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
         result
     }
@@ -124,9 +135,10 @@ impl AcirComposer {
         let mut out_ptr: *mut u8 = ptr::null_mut();
         let error_msg_ptr = unsafe { acir_get_solidity_verifier(&self.ptr, &mut out_ptr) };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
         if out_ptr.is_null() {
             Err("Failed to get solidity verifier.")
@@ -156,9 +168,10 @@ impl AcirComposer {
             )
         };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
         if out_ptr.is_null() {
             Err("Failed to serialize proof into fields.")
@@ -181,9 +194,10 @@ impl AcirComposer {
             )
         };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
         if out_vkey_ptr.is_null() || out_key_hash_ptr.is_null() {
             Err("Failed to serialize verification key into fields.")
@@ -198,9 +212,10 @@ impl AcirComposer {
     fn delete(&self) {
         let error_msg_ptr = unsafe { acir_delete_acir_composer(&self.ptr) };
         if !error_msg_ptr.is_null() {
-            let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-            let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-            println!("C++ error: {}", error_msg);
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
         }
     }
 }
@@ -222,28 +237,38 @@ pub struct CircuitSizes {
 /// Fetches the sizes for various circuit components using the provided constraint system buffer.
 pub fn get_circuit_sizes(constraint_system_buf: &[u8]) -> CircuitSizes {
     let mut ret = CircuitSizes::default();
-    let mut buffer = Vec::<u8>::new();
-    let len = constraint_system_buf.len() as u32;
-    buffer.extend_from_slice(len.to_be_bytes().as_slice());
-    buffer.extend_from_slice(constraint_system_buf);
-    println!("{:?}", constraint_system_buf);
-    println!("{:?}", len);
-    println!("{:?}", buffer);
     let error_msg_ptr = unsafe {
         acir_get_circuit_sizes(
-            buffer.as_slice().as_ptr(),
+            serialize_slice(constraint_system_buf).as_slice().as_ptr(),
             &mut ret.exact,
             &mut ret.total,
             &mut ret.subgroup,
         )
     };
     if !error_msg_ptr.is_null() {
-        let c_str = unsafe { CStr::from_ptr(error_msg_ptr) };
-        let error_msg = c_str.to_str().unwrap_or("Invalid UTF-8 error message");
-        println!("C++ error: {}", error_msg);
+        println!(
+            "C++ error: {}",
+            parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+        );
     }
-    ret.exact = u32::from_be_bytes(ret.exact.to_le_bytes());
-    ret.subgroup = u32::from_be_bytes(ret.subgroup.to_le_bytes());
-    ret.total = u32::from_be_bytes(ret.total.to_le_bytes());
+    ret.exact = u32::from_be(ret.exact);
+    ret.subgroup = u32::from_be(ret.subgroup);
+    ret.total = u32::from_be(ret.total);
     ret
+}
+
+fn serialize_slice(data: &[u8]) -> Vec<u8> {
+    let mut buffer = Vec::new();
+    buffer.extend_from_slice(&(data.len() as u32).to_be_bytes());
+    buffer.extend_from_slice(data);
+    buffer
+}
+
+fn parse_c_str(ptr: *const ::std::os::raw::c_char) -> Option<String> {
+    if ptr.is_null() {
+        return None;
+    }
+    unsafe { CStr::from_ptr(ptr) }
+        .to_str()
+        .map_or(None, |s| Some(s.to_string()))
 }
