@@ -10,8 +10,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use std::io::Read;
 
-use acir_proofs::acir_composer::AcirComposer;
-use base64::{Engine as _, alphabet, engine::{self, general_purpose}};
+use base64::{engine::general_purpose, Engine as _};
 use flate2::read::GzDecoder;
 
 use crate::acir_proofs::acir_composer::get_circuit_sizes;
