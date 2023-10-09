@@ -1,4 +1,4 @@
-use std::slice;
+use std::{slice, ffi::CStr};
 
 pub struct Buffer {
     data: Vec<u8>,
@@ -20,7 +20,7 @@ impl Buffer {
 
         // 2. Interpret those 4 bytes as a u32 using little-endian.
         let len = u32::from_be_bytes([len_slice[0], len_slice[1], len_slice[2], len_slice[3]]);
-
+        
         // 3. Move the pointer by 4 bytes.
         let data_ptr = ptr.add(4);
 
@@ -40,4 +40,20 @@ impl Buffer {
     pub fn to_vec(self) -> Vec<u8> {
         self.data
     }
+}
+
+pub fn serialize_slice(data: &[u8]) -> Vec<u8> {
+    let mut buffer = Vec::new();
+    buffer.extend_from_slice(&(data.len() as u32).to_be_bytes());
+    buffer.extend_from_slice(data);
+    buffer
+}
+
+pub fn parse_c_str(ptr: *const ::std::os::raw::c_char) -> Option<String> {
+    if ptr.is_null() {
+        return None;
+    }
+    unsafe { CStr::from_ptr(ptr) }
+        .to_str()
+        .map_or(None, |s| Some(s.to_string()))
 }

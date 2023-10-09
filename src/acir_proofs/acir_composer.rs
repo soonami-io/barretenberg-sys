@@ -1,7 +1,7 @@
 use std::ffi::{c_char, c_void, CStr};
 use std::ptr;
 
-use crate::buffer::Buffer;
+use crate::buffer::{Buffer, parse_c_str, serialize_slice};
 use crate::{
     acir_create_proof, acir_delete_acir_composer, acir_get_circuit_sizes,
     acir_get_solidity_verifier, acir_get_verification_key, acir_init_proving_key,
@@ -61,7 +61,7 @@ impl AcirComposer {
             acir_create_proof(
                 &self.ptr,
                 serialize_slice(constraint_system_buf).as_slice().as_ptr(),
-                witness.as_ptr(),
+                serialize_slice(witness).as_slice().as_ptr(),
                 &is_recursive,
                 &mut out_ptr,
             )
@@ -75,7 +75,7 @@ impl AcirComposer {
         if out_ptr.is_null() {
             Err("Failed to create proof.")
         } else {
-            let result = unsafe { Buffer::from_ptr(out_ptr)?.to_vec() };
+            let result = unsafe { Buffer::from_ptr(Buffer::from_ptr(out_ptr)?.to_vec().as_slice().as_ptr())?.to_vec() };
             Ok(result)
         }
     }
@@ -121,7 +121,7 @@ impl AcirComposer {
     pub fn verify_proof(&self, proof: &[u8], is_recursive: bool) -> bool {
         let mut result = false;
         let error_msg_ptr =
-            unsafe { acir_verify_proof(&self.ptr, proof.as_ptr(), &is_recursive, &mut result) };
+            unsafe { acir_verify_proof(&self.ptr, serialize_slice(proof).as_slice().as_ptr(), &is_recursive, &mut result) };
         if !error_msg_ptr.is_null() {
             println!(
                 "C++ error: {}",
@@ -257,18 +257,4 @@ pub fn get_circuit_sizes(constraint_system_buf: &[u8]) -> CircuitSizes {
     ret
 }
 
-fn serialize_slice(data: &[u8]) -> Vec<u8> {
-    let mut buffer = Vec::new();
-    buffer.extend_from_slice(&(data.len() as u32).to_be_bytes());
-    buffer.extend_from_slice(data);
-    buffer
-}
 
-fn parse_c_str(ptr: *const ::std::os::raw::c_char) -> Option<String> {
-    if ptr.is_null() {
-        return None;
-    }
-    unsafe { CStr::from_ptr(ptr) }
-        .to_str()
-        .map_or(None, |s| Some(s.to_string()))
-}
