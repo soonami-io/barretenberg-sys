@@ -8,9 +8,9 @@ FFI bindings for the `barretenberg` library in Rust, providing convenience for z
 
 ## Dependencies
 
-1. **barretenberg** (preferably at commit `87aeb375d7b434e0faf47abb79f97753ab760987`)
+1. **barretenberg**
 
-    You must first build and install `barretenberg` by following the instructions [in the README](https://github.com/AztecProtocol/barretenberg#getting-started). Note: `barretenberg` has its own [dependencies](https://github.com/AztecProtocol/barretenberg#dependencies), such as `cmake` and `ninja`, that need to be installed.
+    You must first build and install `barretenberg` by following the instructions [in the README](https://github.com/visoftsolutions/barretenberg#getting-started). Note: `barretenberg` has its own [dependencies](https://github.com/visoftsolutions/barretenberg#dependencies), such as `cmake` and `ninja`, that need to be installed.
 
 ## Build dependencies
 
