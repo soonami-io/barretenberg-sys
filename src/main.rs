@@ -38,6 +38,8 @@ fn main() {
     let witness = hex::decode(SOLVEDWITNESS).unwrap();
 
     let proof = acir_composer.create_proof(&acir_buffer_uncompressed, &witness, false).unwrap();
+    
+    acir_composer.init_proving_key(&acir_buffer_uncompressed);
     let verdict = acir_composer.verify_proof(&proof, false);
 
     println!("{:?}", hex::encode(proof));

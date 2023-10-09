@@ -35,7 +35,7 @@ extern "C"
     {
         try
         {
-            *out = new acir_proofs::AcirComposer(ntohl(*size_hint));
+            *out = new acir_proofs::AcirComposer(*size_hint);
             return nullptr;
         }
         catch (const std::exception &e)
@@ -183,7 +183,7 @@ extern "C"
         {
             auto acir_composer = reinterpret_cast<acir_proofs::AcirComposer *>(*acir_composer_ptr);
             auto proof = from_buffer<std::vector<uint8_t>>(proof_buf);
-            auto proof_as_fields = acir_composer->serialize_proof_into_fields(proof, ntohl(*num_inner_public_inputs));
+            auto proof_as_fields = acir_composer->serialize_proof_into_fields(proof, *num_inner_public_inputs);
 
             *out = to_heap_buffer(proof_as_fields);
             return nullptr;
