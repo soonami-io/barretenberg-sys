@@ -18,6 +18,7 @@ fn main() {
             r#"
             #include <barretenberg/dsl/acir_proofs/acir_proofs.hpp>
             #include <barretenberg/srs/c_bind.hpp>
+            #include <barretenberg/examples/c_bind.hpp>
             "#,
         )
         .allowlist_function("acir_get_circuit_sizes")
@@ -34,6 +35,7 @@ fn main() {
         .allowlist_function("acir_serialize_proof_into_fields")
         .allowlist_function("acir_serialize_verification_key_into_fields")
         .allowlist_function("srs_init_srs")
+        .allowlist_function("examples_simple_create_and_verify_proof")
         .generate()
         .expect("Couldn't generate bindings!");
 

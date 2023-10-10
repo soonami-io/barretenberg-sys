@@ -20,7 +20,7 @@ const char * srs_init_srs(uint8_t const* points_buf, uint32_t const* num_points,
     try
     {
         auto points = std::vector<g1::affine_element>(*num_points);
-        srs::IO<curve::BN254>::read_affine_elements_from_buffer(points.data(), (char*)points_buf, 16 * 64);
+        srs::IO<curve::BN254>::read_affine_elements_from_buffer(points.data(), (char*)points_buf, points.size() * 64);
 
         g2::affine_element g2_point;
         srs::IO<curve::BN254>::read_affine_elements_from_buffer(&g2_point, (char*)g2_point_buf, 128);

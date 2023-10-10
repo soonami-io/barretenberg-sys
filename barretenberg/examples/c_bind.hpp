@@ -2,4 +2,7 @@
 #include <barretenberg/common/serialize.hpp>
 #include <cstdint>
 
-WASM_EXPORT void examples_simple_create_and_verify_proof(bool* valid);
+extern "C"
+{
+    const char* examples_simple_create_and_verify_proof(bool* valid);
+}

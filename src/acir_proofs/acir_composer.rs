@@ -7,7 +7,7 @@ use crate::{
     acir_get_solidity_verifier, acir_get_verification_key, acir_init_proving_key,
     acir_init_verification_key, acir_load_verification_key, acir_new_acir_composer,
     acir_serialize_proof_into_fields, acir_serialize_verification_key_into_fields,
-    acir_verify_proof,
+    acir_verify_proof, examples_simple_create_and_verify_proof
 };
 
 /// A safe wrapper around the ACIR composer from the C library.
@@ -206,6 +206,19 @@ impl AcirComposer {
             let key_hash = unsafe { Buffer::from_ptr(out_key_hash_ptr)?.to_vec() };
             Ok((vkey, key_hash))
         }
+    }
+
+    pub fn simple_create_and_verify_proof() -> bool {
+        let mut result = false;
+        let error_msg_ptr =
+            unsafe { examples_simple_create_and_verify_proof(&mut result) };
+        if !error_msg_ptr.is_null() {
+            println!(
+                "C++ error: {}",
+                parse_c_str(error_msg_ptr).unwrap_or("Parsing c_str failed".to_string())
+            );
+        }
+        result
     }
 
     /// Internally frees the underlying ACIR composer.
